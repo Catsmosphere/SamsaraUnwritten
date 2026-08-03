@@ -11,6 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "SamsaraUnwritten.h"
+#include "Core/Interactable.h"
 
 ASamsaraUnwrittenCharacter::ASamsaraUnwrittenCharacter()
 {
@@ -65,6 +66,9 @@ void ASamsaraUnwrittenCharacter::SetupPlayerInputComponent(UInputComponent* Play
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASamsaraUnwrittenCharacter::Look);
+	
+		// Interacting
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ASamsaraUnwrittenCharacter::TryInteract);
 	}
 	else
 	{
@@ -130,4 +134,60 @@ void ASamsaraUnwrittenCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void ASamsaraUnwrittenCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	UpdateInteractionFocus();
+}
+
+void ASamsaraUnwrittenCharacter::UpdateInteractionFocus()
+{
+	if (GetController() == nullptr)
+	{
+		return;
+	}
+
+	FVector Start = GetPawnViewLocation();
+	FVector End = Start + (GetControlRotation().Vector() * InteractionRange);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	FHitResult Hit;
+	bool bHit = GetWorld()->SweepSingleByChannel(
+		Hit,
+		Start,
+		End,
+		FQuat::Identity,
+		ECC_Visibility,
+		FCollisionShape::MakeSphere(InteractionRadius),
+		Params
+	);
+
+	AActor* NewFocus = nullptr;
+	if (bHit && Hit.GetActor() != nullptr && Hit.GetActor()->Implements<UInteractable>())
+	{
+		NewFocus = Hit.GetActor();
+	}
+
+	CurrentFocusActor = NewFocus;
+}
+
+void ASamsaraUnwrittenCharacter::PerformInteract(AActor* TargetActor)
+{
+	if (TargetActor != nullptr && TargetActor->Implements<UInteractable>())
+	{
+		IInteractable::Execute_OnInteract(TargetActor, this);
+	}
+}
+
+void ASamsaraUnwrittenCharacter::TryInteract()
+{
+	if (CurrentFocusActor != nullptr)
+	{
+		PerformInteract(CurrentFocusActor);
+	}
 }

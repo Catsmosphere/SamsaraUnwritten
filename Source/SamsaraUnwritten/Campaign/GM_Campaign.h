@@ -13,5 +13,8 @@ UCLASS()
 class SAMSARAUNWRITTEN_API AGM_Campaign : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	AGM_Campaign();
 	
 };

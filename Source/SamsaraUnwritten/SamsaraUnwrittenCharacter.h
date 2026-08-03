@@ -49,6 +49,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
 
+	/** Interact Input Action */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InteractAction;
+
 public:
 
 	/** Constructor */
@@ -92,5 +96,36 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+protected:
+
+	/** Returns how far can the interaction reach **/
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	float InteractionRange = 250.f;
+
+	/** Creates a spherical range shape for the interaction **/
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	float InteractionRadius = 5.f;
+
+	/** Tracks and handle the hide & show of promptUI **/
+	UPROPERTY(BlueprintReadOnly, Category = "Interaction")
+	AActor* CurrentFocusActor = nullptr;
+
+	/** Scans for a nearby IInteractable actor and updates CurrentFocusActor **/
+	void UpdateInteractionFocus();
+
+	/** Called when this Character should attempt to interact with CurrentFocusActor. Override to customize behavior. **/
+	virtual void PerformInteract(AActor* TargetActor);
+
+public:
+
+	/** Handles interact pressed inputs from either controls or UI interfaces */
+	UFUNCTION(BlueprintCallable, Category="Interaction")
+	virtual void TryInteract();
+
+protected:
+
+	/** Ticks every frame to update interaction focus **/
+	virtual void Tick(float DeltaTime) override;
 };
 

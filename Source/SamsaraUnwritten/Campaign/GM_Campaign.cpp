@@ -2,4 +2,9 @@
 
 
 #include "Campaign/GM_Campaign.h"
+#include "SamsaraUnwrittenCharacter.h"
 
+AGM_Campaign::AGM_Campaign()
+{
+    DefaultPawnClass = ASamsaraUnwrittenCharacter::StaticClass();
+}
