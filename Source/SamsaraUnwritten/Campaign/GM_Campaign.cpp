@@ -6,5 +6,5 @@
 
 AGM_Campaign::AGM_Campaign()
 {
-    DefaultPawnClass = ASamsaraUnwrittenCharacter::StaticClass();
+
 }

@@ -7,7 +7,7 @@
 
 AGM_MP_Gameplay::AGM_MP_Gameplay()
 {
-    DefaultPawnClass = ASamsaraUnwrittenCharacter::StaticClass();
+
     PlayerStateClass = AMPPlayerState::StaticClass();
     bUseSeamlessTravel = true;
 }
