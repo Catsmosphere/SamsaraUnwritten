@@ -184,10 +184,15 @@ void ASamsaraUnwrittenCharacter::PerformInteract(AActor* TargetActor)
 	}
 }
 
+void ASamsaraUnwrittenCharacter::ServerPerformInteract_Implementation(AActor* TargetActor)
+{
+	PerformInteract(TargetActor);
+}
+
 void ASamsaraUnwrittenCharacter::TryInteract()
 {
 	if (CurrentFocusActor != nullptr)
 	{
-		PerformInteract(CurrentFocusActor);
+		ServerPerformInteract(CurrentFocusActor);
 	}
 }

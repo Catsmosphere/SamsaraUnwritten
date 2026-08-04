@@ -117,6 +117,10 @@ protected:
 	/** Called when this Character should attempt to interact with CurrentFocusActor. Override to customize behavior. **/
 	virtual void PerformInteract(AActor* TargetActor);
 
+	/** Server RPC requests the server to perform the interaction (multiplayer authority) */
+	UFUNCTION(Server, Reliable)
+	void ServerPerformInteract(AActor* TargetActor);
+
 public:
 
 	/** Handles interact pressed inputs from either controls or UI interfaces */
