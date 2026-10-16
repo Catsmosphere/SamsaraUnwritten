@@ -301,6 +301,59 @@ protected:
 
 public:
 
+	/** Heals TotalHeal HP evenly over Duration seconds. Re-applying restarts the heal. */
+	UFUNCTION(BlueprintCallable, Category="Buffs")
+	void ApplyHealOverTime(float TotalHeal, float Duration);
+
+	/** Adds SpeedBonus to walk speed for Duration seconds. Re-applying refreshes the timer instead of stacking. */
+	UFUNCTION(BlueprintCallable, Category="Buffs")
+	void ApplySpeedBuff(float SpeedBonus, float Duration);
+
+	/** Adds DamageBonus to melee damage for Duration seconds. Re-applying refreshes the timer instead of stacking. */
+	UFUNCTION(BlueprintCallable, Category="Buffs")
+	void ApplyDamageBuff(float DamageBonus, float Duration);
+
+	/** Slows the character by subtracting SpeedPenalty from walk speed for Duration seconds. */
+	UFUNCTION(BlueprintCallable, Category="Buffs")
+	void ApplySlowDebuff(float SpeedPenalty, float Duration);
+
+	/** Removes all active debuffs (currently: the slow). */
+	UFUNCTION(BlueprintCallable, Category="Buffs")
+	void CleanseDebuffs();
+
+protected:
+
+	/** Recomputes walk speed from the base speed, the speed buff and the slow debuff */
+	void RecalculateWalkSpeed();
+
+	/** Timer callbacks */
+	void HealTick();
+	void EndSpeedBuff();
+	void EndDamageBuff();
+	void EndSlowDebuff();
+
+	/** Walk speed before any buff or debuff, captured at BeginPlay */
+	float BaseWalkSpeed = 0.0f;
+
+	/** Melee damage before any buff, captured at BeginPlay */
+	float BaseMeleeDamage = 0.0f;
+
+	/** Currently active speed bonus and slow penalty */
+	float ActiveSpeedBonus = 0.0f;
+	float ActiveSlowPenalty = 0.0f;
+
+	/** Heal-over-time state */
+	float HealPerTick = 0.0f;
+	int32 HealTicksRemaining = 0;
+
+	/** Buff and debuff timers */
+	FTimerHandle HealTimer;
+	FTimerHandle SpeedBuffTimer;
+	FTimerHandle DamageBuffTimer;
+	FTimerHandle SlowDebuffTimer;
+
+public:
+
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
