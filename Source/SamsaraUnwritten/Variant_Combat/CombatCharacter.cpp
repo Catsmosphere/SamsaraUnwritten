@@ -363,8 +363,14 @@ void ACombatCharacter::HandleDeath()
 	// pull back the camera
 	GetCameraBoom()->TargetArmLength = DeathCameraDistance;
 
-	// schedule respawning
-	GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &ACombatCharacter::RespawnCharacter, RespawnTime, false);
+	// let Blueprint react to the death, for example to show a game over screen
+	OnCharacterDied();
+
+	// schedule respawning, unless a game over screen is taking over
+	if (bAutoRespawn)
+	{
+		GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &ACombatCharacter::RespawnCharacter, RespawnTime, false);
+	}
 }
 
 void ACombatCharacter::ApplyHealing(float Healing, AActor* Healer)
@@ -553,6 +559,12 @@ void ACombatCharacter::RecalculateWalkSpeed()
 {
 	// base speed plus the speed buff minus the slow, never below zero
 	GetCharacterMovement()->MaxWalkSpeed = FMath::Max(0.0f, BaseWalkSpeed + ActiveSpeedBonus - ActiveSlowPenalty);
+}
+
+float ACombatCharacter::GetHealthPercent() const
+{
+	// guard against a zero max HP
+	return MaxHP > 0.0f ? FMath::Clamp(CurrentHP / MaxHP, 0.0f, 1.0f) : 0.0f;
 }
 
 void ACombatCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)

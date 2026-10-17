@@ -317,6 +317,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Buffs")
 	void ApplySlowDebuff(float SpeedPenalty, float Duration);
 
+	/** Current HP as a 0 to 1 fraction, for UI bars */
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetHealthPercent() const;
+
+	/** Current HP, for UI text */
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetCurrentHP() const { return CurrentHP; }
+
+	/** Max HP, for UI text */
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetMaxHP() const { return MaxHP; }
+
+	/** Called when the character dies. Implement in Blueprint to show a game over screen. */
+	UFUNCTION(BlueprintImplementableEvent, Category="Health")
+	void OnCharacterDied();
+
+	/** If false, the character is not respawned automatically after death, so a game over screen can take over */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Respawn")
+	bool bAutoRespawn = true;
+
 	/** Removes all active debuffs (currently: the slow). */
 	UFUNCTION(BlueprintCallable, Category="Buffs")
 	void CleanseDebuffs();
