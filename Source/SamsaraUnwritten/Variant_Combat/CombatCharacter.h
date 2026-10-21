@@ -69,6 +69,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* ChargedAttackAction;
 
+	/** Mouse look multiplier controlled by the settings menu */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Input|Look", meta=(ClampMin="0.0", ClampMax="3.0"))
+	float LookSensitivity = 1.0f;
+
+	/** Whether vertical mouse look is inverted */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Input|Look")
+	bool bInvertLookY = false;
+
 	/** Max amount of HP the character will have on respawn */
 	UPROPERTY(EditAnywhere, Category="Damage", meta = (ClampMin = 0, ClampMax = 100))
 	float MaxHP = 5.0f;
@@ -204,6 +212,9 @@ public:
 	/** Handles look inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoLook(float Yaw, float Pitch);
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void SetLookSettings(float Sensitivity, bool bInvertY);
 
 	/** Handles combo attack pressed from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")

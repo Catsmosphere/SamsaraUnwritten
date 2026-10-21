@@ -111,9 +111,15 @@ void ACombatCharacter::DoLook(float Yaw, float Pitch)
 	if (GetController() != nullptr)
 	{
 		// add yaw and pitch input to controller
-		AddControllerYawInput(Yaw);
-		AddControllerPitchInput(Pitch);
+		AddControllerYawInput(Yaw * LookSensitivity);
+		AddControllerPitchInput(Pitch * LookSensitivity * (bInvertLookY ? -1.0f : 1.0f));
 	}
+}
+
+void ACombatCharacter::SetLookSettings(float Sensitivity, bool bInvertY)
+{
+	LookSensitivity = FMath::Clamp(Sensitivity, 0.0f, 3.0f);
+	bInvertLookY = bInvertY;
 }
 
 void ACombatCharacter::DoComboAttackStart()
