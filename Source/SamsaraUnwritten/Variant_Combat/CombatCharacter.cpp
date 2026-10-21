@@ -363,8 +363,14 @@ void ACombatCharacter::HandleDeath()
 	// pull back the camera
 	GetCameraBoom()->TargetArmLength = DeathCameraDistance;
 
-	// schedule respawning
-	GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &ACombatCharacter::RespawnCharacter, RespawnTime, false);
+	// let Blueprint react to the death, for example to show a game over screen
+	OnCharacterDied();
+
+	// schedule respawning, unless a game over screen is taking over
+	if (bAutoRespawn)
+	{
+		GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &ACombatCharacter::RespawnCharacter, RespawnTime, false);
+	}
 }
 
 void ACombatCharacter::ApplyHealing(float Healing, AActor* Healer)
@@ -438,13 +444,138 @@ void ACombatCharacter::BeginPlay()
 	// set the life bar color
 	LifeBarWidget->SetBarColor(LifeBarColor);
 
+	// remember the unbuffed stats so buffs can be applied and removed safely
+	BaseWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+	BaseMeleeDamage = MeleeDamage;
+
 	// reset HP to maximum
 	ResetHP();
+}
+
+// how often heal over time restores HP, in seconds
+static constexpr float HealTickInterval = 0.5f;
+
+void ACombatCharacter::ApplyHealOverTime(float TotalHeal, float Duration)
+{
+	// ignore dead characters and values that make no sense
+	if (CurrentHP <= 0.0f || TotalHeal <= 0.0f || Duration <= 0.0f)
+	{
+		return;
+	}
+
+	// spread the healing evenly over the duration; re-applying restarts the heal
+	HealTicksRemaining = FMath::Max(1, FMath::RoundToInt(Duration / HealTickInterval));
+	HealPerTick = TotalHeal / HealTicksRemaining;
+
+	GetWorld()->GetTimerManager().SetTimer(HealTimer, this, &ACombatCharacter::HealTick, HealTickInterval, true);
+}
+
+void ACombatCharacter::HealTick()
+{
+	// stop healing if the character died in the meantime
+	if (CurrentHP <= 0.0f)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(HealTimer);
+		return;
+	}
+
+	CurrentHP = FMath::Min(MaxHP, CurrentHP + HealPerTick);
+	LifeBarWidget->SetLifePercentage(CurrentHP / MaxHP);
+
+	// stop when the heal is used up or HP is full
+	if (--HealTicksRemaining <= 0 || CurrentHP >= MaxHP)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(HealTimer);
+	}
+}
+
+void ACombatCharacter::ApplySpeedBuff(float SpeedBonus, float Duration)
+{
+	if (CurrentHP <= 0.0f || Duration <= 0.0f)
+	{
+		return;
+	}
+
+	// replace any active bonus instead of stacking, and restart the timer
+	ActiveSpeedBonus = SpeedBonus;
+	RecalculateWalkSpeed();
+
+	GetWorld()->GetTimerManager().SetTimer(SpeedBuffTimer, this, &ACombatCharacter::EndSpeedBuff, Duration, false);
+}
+
+void ACombatCharacter::EndSpeedBuff()
+{
+	ActiveSpeedBonus = 0.0f;
+	RecalculateWalkSpeed();
+}
+
+void ACombatCharacter::ApplyDamageBuff(float DamageBonus, float Duration)
+{
+	if (CurrentHP <= 0.0f || Duration <= 0.0f)
+	{
+		return;
+	}
+
+	// replace any active bonus instead of stacking, and restart the timer
+	MeleeDamage = BaseMeleeDamage + DamageBonus;
+
+	GetWorld()->GetTimerManager().SetTimer(DamageBuffTimer, this, &ACombatCharacter::EndDamageBuff, Duration, false);
+}
+
+void ACombatCharacter::EndDamageBuff()
+{
+	MeleeDamage = BaseMeleeDamage;
+}
+
+void ACombatCharacter::ApplySlowDebuff(float SpeedPenalty, float Duration)
+{
+	if (CurrentHP <= 0.0f || Duration <= 0.0f)
+	{
+		return;
+	}
+
+	// replace any active slow instead of stacking, and restart the timer
+	ActiveSlowPenalty = FMath::Max(0.0f, SpeedPenalty);
+	RecalculateWalkSpeed();
+
+	GetWorld()->GetTimerManager().SetTimer(SlowDebuffTimer, this, &ACombatCharacter::EndSlowDebuff, Duration, false);
+}
+
+void ACombatCharacter::EndSlowDebuff()
+{
+	ActiveSlowPenalty = 0.0f;
+	RecalculateWalkSpeed();
+}
+
+void ACombatCharacter::CleanseDebuffs()
+{
+	// remove the slow immediately, without waiting for its timer
+	GetWorld()->GetTimerManager().ClearTimer(SlowDebuffTimer);
+	ActiveSlowPenalty = 0.0f;
+	RecalculateWalkSpeed();
+}
+
+void ACombatCharacter::RecalculateWalkSpeed()
+{
+	// base speed plus the speed buff minus the slow, never below zero
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Max(0.0f, BaseWalkSpeed + ActiveSpeedBonus - ActiveSlowPenalty);
+}
+
+float ACombatCharacter::GetHealthPercent() const
+{
+	// guard against a zero max HP
+	return MaxHP > 0.0f ? FMath::Clamp(CurrentHP / MaxHP, 0.0f, 1.0f) : 0.0f;
 }
 
 void ACombatCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
+
+	// clear the buff and debuff timers
+	GetWorld()->GetTimerManager().ClearTimer(HealTimer);
+	GetWorld()->GetTimerManager().ClearTimer(SpeedBuffTimer);
+	GetWorld()->GetTimerManager().ClearTimer(DamageBuffTimer);
+	GetWorld()->GetTimerManager().ClearTimer(SlowDebuffTimer);
 
 	// clear the respawn timer
 	GetWorld()->GetTimerManager().ClearTimer(RespawnTimer);
