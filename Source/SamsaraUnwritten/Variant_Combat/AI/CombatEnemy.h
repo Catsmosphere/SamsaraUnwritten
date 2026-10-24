@@ -44,7 +44,7 @@ public:
 protected:
 
 	/** Max amount of HP the character will have on respawn */
-	UPROPERTY(EditAnywhere, Category="Damage")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
 	float MaxHP = 3.0f;
 
 public:
